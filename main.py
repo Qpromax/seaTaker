@@ -8,8 +8,7 @@ tomorrow = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
 with open('data.json', 'r', encoding='utf-8') as f:
     data = json.load(f) 
 
-
-URL_INDEX = "https://libic.zcmu.edu.cn/h5/index.html"   # 预约系统首页
+URL_INDEX = "https://libic.zcmu.edu.cn/h5/index.html"
 URL_APP   = f"https://libic.zcmu.edu.cn/h5/index.html#/SeatScreening/1/seatSelect?date={tomorrow}&area=21"
 # True=无头模式（后台运行），False=显示浏览器窗口
 HEADLESS  = True
@@ -78,59 +77,64 @@ def reserve():
                 print(f"Body: {request.post_data}")
         page.on("request", log_request)
 
-        print("正在打开页面")
-        page.goto(URL_INDEX)
-        page.wait_for_load_state("networkidle")
-
-        if page.is_visible("#username", timeout=3000):
-            print("填写登录信息")
-            page.fill("#username", USERNAME)
-            page.fill("#password", PASSWORD)
-            page.click('input[value="LOGIN"]')
-            print("登录完成")
-        else:
-            print("未检测到登录表单, 可能已经登录或需手动处理CAS认证")
-        
-        print("开始预约")
-        selector = "div.item.btn:has-text('座位预约')"
-        page.wait_for_selector(selector, state="visible", timeout=10000)
-        page.click(selector)
-
-        print("选择教室")
-        selector = "button.van-button--primary:has-text('预约')"
-        page.wait_for_selector("button.van-button--primary:has-text('预约')", timeout=10000)
-        page.goto(URL_APP)
-        page.goto(URL_APP)
-
-        print("列表模式")
-        selector = "div.reg-pavilion:has-text('列表模式')"
-        page.wait_for_selector(selector, state="visible", timeout=10000)
-        page.click(selector)
-        page.click(selector)
-
-        print("选择座位")
-        selected_seat = None
-        for seat in SEATS:
-            locator = page.locator(".grid-seat .btn").filter(has_text=seat)
-            if locator.count() > 0:
-                locator.first.click(force=True)
-                print(f"已选择座位 {seat}")
-                selected_seat = seat
-                break
-        if selected_seat is None:
-            raise Exception("所有备用座位均不可用")
-        # seat = page.locator(".grid-seat .btn").filter(has_text=seat)
-        # seat.click(force=True)
-
-        print("提交预约")
-        selector = "button.van-button--primary.confirm.btn"
-        page.wait_for_selector(selector, state="visible", timeout=10000)
-        page.click(selector)
-
         try:
+            print("正在打开页面")
+            page.goto(URL_INDEX)
+            page.wait_for_load_state("networkidle")
+
+            if page.is_visible("#username", timeout=3000):
+                print("填写登录信息")
+                page.fill("#username", USERNAME)
+                page.fill("#password", PASSWORD)
+                if page.locator('input[value="LOGIN"]').count() > 0:
+                    page.click('input[value="LOGIN"]')
+                else:
+                    page.click('input[value="登录"]')
+                print("登录完成")
+            else:
+                print("未检测到登录表单, 可能已经登录或需手动处理CAS认证")
+        
+            print("开始预约")
+            selector = "div.item.btn:has-text('座位预约')"
+            page.wait_for_selector(selector, state="visible", timeout=10000)
+            page.click(selector)
+
+            print("选择教室")
+            selector = "button.van-button--primary:has-text('预约')"
+            page.wait_for_selector("button.van-button--primary:has-text('预约')", timeout=10000)
+            page.goto(URL_APP)
+            page.goto(URL_APP)
+
+            print("选择日期")
+            print(tomorrow)
+            page.goto(URL_APP)
+
+            print("列表模式")
+            selector = "div.reg-pavilion:has-text('列表模式')"
+            page.wait_for_selector(selector, state="visible", timeout=10000)
+            page.click(selector)
+            page.click(selector)
+
+            print("选择座位")
+            selected_seat = None
+            for seat in SEATS:
+                locator = page.locator(".grid-seat .btn").filter(has_text=seat)
+                if locator.count() > 0:
+                    locator.first.click(force=True)
+                    print(f"已选择座位 {seat}")
+                    selected_seat = seat
+                    break
+            if selected_seat is None:
+                raise Exception("所有备用座位均不可用")
+            
+            print("提交预约")
+            selector = "button.van-button--primary.confirm.btn"
+            page.wait_for_selector(selector, state="visible", timeout=10000)
+            page.click(selector)
+
             page.wait_for_selector(".block_header:has-text('预约成功')", timeout=15000)
             print("预约成功！")
-        except:
+        except Exception as e:
             print("未检测到预约成功标识，可能预约失败")
             debug_snapshot(page, "reservation_failed")
 
