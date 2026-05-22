@@ -4,12 +4,15 @@ from playwright.sync_api import sync_playwright
 from datetime import datetime, timedelta
 
 # 获取明天日期，格式 YYYY-MM-DD
-tomorrow = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
+DATE = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
 with open('data.json', 'r', encoding='utf-8') as f:
     data = json.load(f) 
+    
+# ROOM = "21"
+ROOM = "40"
 
 URL_INDEX = "https://libic.zcmu.edu.cn/h5/index.html"
-URL_APP   = f"https://libic.zcmu.edu.cn/h5/index.html#/SeatScreening/1/seatSelect?date={tomorrow}&area=21"
+URL_APP   = f"https://libic.zcmu.edu.cn/h5/index.html#/SeatScreening/1/seatSelect?date={DATE}&area={ROOM}"
 # True=无头模式（后台运行），False=显示浏览器窗口
 HEADLESS  = True
 SLOW_MO   = 100
@@ -106,7 +109,7 @@ def reserve():
             page.goto(URL_APP)
 
             print("选择日期")
-            print(tomorrow)
+            print(DATE)
             page.goto(URL_APP)
 
             print("列表模式")
