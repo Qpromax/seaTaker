@@ -2,24 +2,23 @@ import time
 import json
 from playwright.sync_api import sync_playwright
 from datetime import datetime, timedelta
+    
+# True=无头模式（后台运行），False=显示浏览器窗口
+HEADLESS  = True
+SLOW_MO   = 100
 
 # 获取明天日期，格式 YYYY-MM-DD
 DATE = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
 with open('data.json', 'r', encoding='utf-8') as f:
     data = json.load(f) 
-    
-# ROOM = "21"
-ROOM = "40"
-
-URL_INDEX = "https://libic.zcmu.edu.cn/h5/index.html"
-URL_APP   = f"https://libic.zcmu.edu.cn/h5/index.html#/SeatScreening/1/seatSelect?date={DATE}&area={ROOM}"
-# True=无头模式（后台运行），False=显示浏览器窗口
-HEADLESS  = True
-SLOW_MO   = 100
 
 USERNAME = data["name"]
 PASSWORD = data["password"]
 SEATS    = data["seats"]
+ROOM     = SEATS[0]
+
+URL_INDEX = "https://libic.zcmu.edu.cn/h5/index.html"
+URL_APP   = f"https://libic.zcmu.edu.cn/h5/index.html#/SeatScreening/1/seatSelect?date={DATE}&area={ROOM}"
 
 def debug_snapshot(page, info):
     path = f"{info}.png"
@@ -81,12 +80,12 @@ def reserve():
         page.on("request", log_request)
 
         try:
-            print("正在打开页面")
+            print("正在打开页面", end="--")
             page.goto(URL_INDEX)
             page.wait_for_load_state("networkidle")
 
             if page.is_visible("#username", timeout=3000):
-                print("填写登录信息")
+                print("填写登录信息", end="--")
                 page.fill("#username", USERNAME)
                 page.fill("#password", PASSWORD)
                 if page.locator('input[value="LOGIN"]').count() > 0:
@@ -97,30 +96,30 @@ def reserve():
             else:
                 print("未检测到登录表单, 可能已经登录或需手动处理CAS认证")
         
-            print("开始预约")
+            print("开始预约", end="--")
             selector = "div.item.btn:has-text('座位预约')"
             page.wait_for_selector(selector, state="visible", timeout=10000)
             page.click(selector)
 
-            print("选择教室")
+            print("选择教室", end="--")
             selector = "button.van-button--primary:has-text('预约')"
             page.wait_for_selector("button.van-button--primary:has-text('预约')", timeout=10000)
             page.goto(URL_APP)
             page.goto(URL_APP)
 
-            print("选择日期")
+            print("选择日期", end="--")
             print(DATE)
             page.goto(URL_APP)
 
-            print("列表模式")
+            print("列表模式", end="--")
             selector = "div.reg-pavilion:has-text('列表模式')"
             page.wait_for_selector(selector, state="visible", timeout=10000)
             page.click(selector)
             page.click(selector)
 
-            print("选择座位")
+            print("选择座位", end="--")
             selected_seat = None
-            for seat in SEATS:
+            for seat in SEATS[1:]:
                 locator = page.locator(".grid-seat .btn").filter(has_text=seat)
                 if locator.count() > 0:
                     locator.first.click(force=True)
@@ -130,7 +129,7 @@ def reserve():
             if selected_seat is None:
                 raise Exception("所有备用座位均不可用")
             
-            print("提交预约")
+            print("提交预约", end="--")
             selector = "button.van-button--primary.confirm.btn"
             page.wait_for_selector(selector, state="visible", timeout=10000)
             page.click(selector)
