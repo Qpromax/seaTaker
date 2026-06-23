@@ -1,5 +1,5 @@
 import time
-import json
+import urllib.request, json
 from playwright.sync_api import sync_playwright
 from datetime import datetime, timedelta
     
@@ -16,6 +16,7 @@ USERNAME = data["name"]
 PASSWORD = data["password"]
 SEATS    = data["seats"]
 ROOM     = SEATS[0]
+WEBHOOK  = data["webhook"]
 
 URL_INDEX = "https://libic.zcmu.edu.cn/h5/index.html"
 URL_APP   = f"https://libic.zcmu.edu.cn/h5/index.html#/SeatScreening/1/seatSelect?date={DATE}&area={ROOM}"
@@ -80,7 +81,7 @@ def reserve():
         page.on("request", log_request)
 
         try:
-            print("正在打开页面", end="--")
+            print("打开页面")
             page.goto(URL_INDEX)
             page.wait_for_load_state("networkidle")
 
@@ -136,9 +137,16 @@ def reserve():
 
             page.wait_for_selector(".block_header:has-text('预约成功')", timeout=15000)
             print("预约成功！")
+
+            message = f":seat | {selected_seat}"
+            req = urllib.request.Request(WEBHOOK, data=json.dumps({"msgtype":"text","text":{"content": message}}).encode(), headers={"Content-Type":"application/json"})
+            urllib.request.urlopen(req).read()
         except Exception as e:
             print("未检测到预约成功标识，可能预约失败")
             debug_snapshot(page, "reservation_failed")
+            message = f":seat | {selected_seat}"
+            req = urllib.request.Request(WEBHOOK, data=json.dumps({"msgtype":"text","text":{"content": message}}).encode(), headers={"Content-Type":"application/json"})
+            urllib.request.urlopen(req).read()
 
         browser.close()
 
