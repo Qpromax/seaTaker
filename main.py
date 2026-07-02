@@ -144,7 +144,7 @@ def reserve():
         except Exception as e:
             print("未检测到预约成功标识，可能预约失败")
             debug_snapshot(page, "reservation_failed")
-            message = f":seat | {selected_seat}"
+            message = f":seat | failed"
             req = urllib.request.Request(WEBHOOK, data=json.dumps({"msgtype":"text","text":{"content": message}}).encode(), headers={"Content-Type":"application/json"})
             urllib.request.urlopen(req).read()
 
