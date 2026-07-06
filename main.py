@@ -103,16 +103,24 @@ def reserve():
             print("选择教室", end="--")
             print(ROOM)
             page.wait_for_selector("button.van-button--primary:has-text('预约')", timeout=10000)
-            page.goto(URL_DATE)
-            page.goto(URL_AREA)
+            for attempt in range(3):
+                page.goto(URL_AREA)
+                if page.url == URL_AREA:
+                    break
+                time.sleep(1)
+            else:
+                raise RuntimeError("跳转失败")
 
             print("选择日期", end="--")
             print(DATE)
-            page.goto(URL_AREA)
 
             print("列表模式", end="--")
             locator = page.locator("div.reg-pavilion:visible:has-text('列表模式')")
             locator.click(timeout=10000)
+            # selector = "div.reg-pavilion:has-text('列表模式')"
+            # page.wait_for_selector(selector, state="visible", timeout=10000)
+            # page.click(selector)
+            # page.click(selector)
 
             print("选择座位", end="--")
             selected_seat = None
@@ -136,7 +144,7 @@ def reserve():
             req = urllib.request.Request(WEBHOOK, data=json.dumps({"msgtype":"text","text":{"content": message}}).encode(), headers={"Content-Type":"application/json"})
             urllib.request.urlopen(req).read()
         except Exception as e:
-            print("\n<<< 预约失败 >>>")
+            print("\n>>> 预约失败 <<<")
             debug_snapshot(page, "reservation_failed")
             message = f":seat | failed"
             req = urllib.request.Request(WEBHOOK, data=json.dumps({"msgtype":"text","text":{"content": message}}).encode(), headers={"Content-Type":"application/json"})
