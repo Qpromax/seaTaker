@@ -19,16 +19,17 @@ ROOM     = SEATS[0]
 WEBHOOK  = data["webhook"]
 
 URL_INDEX = "https://libic.zcmu.edu.cn/h5/index.html"
-URL_APP   = f"https://libic.zcmu.edu.cn/h5/index.html#/SeatScreening/1/seatSelect?date={DATE}&area={ROOM}"
+URL_DATE  = f"https://libic.zcmu.edu.cn/h5/index.html#/SeatScreening/1/roomDetail?date={DATE}&date={DATE}"
+URL_AREA   = f"https://libic.zcmu.edu.cn/h5/index.html#/SeatScreening/1/seatSelect?date={DATE}&area={ROOM}"
 
 def debug_snapshot(page, info):
     path = f"{info}.png"
     page.screenshot(path=path)
-    print(f"截图已保存为 {info}.png")
+    print(f"截图已保存为 {info}.png\n当前URL {page.url}")
     
 def debug_html(page):
     html_content = page.content()
-    print(html_content)  
+    print(html_content)
 
 def reserve():
     with sync_playwright() as p:
@@ -95,7 +96,7 @@ def reserve():
                     page.click('input[value="登录"]')
                 print("登录完成")
             else:
-                print("未检测到登录表单, 可能已经登录或需手动处理CAS认证")
+                print("未检测到登录表单")
         
             print("开始预约", end="--")
             selector = "div.item.btn:has-text('座位预约')"
@@ -103,20 +104,19 @@ def reserve():
             page.click(selector)
 
             print("选择教室", end="--")
+            print(ROOM)
             selector = "button.van-button--primary:has-text('预约')"
             page.wait_for_selector("button.van-button--primary:has-text('预约')", timeout=10000)
-            page.goto(URL_APP)
-            page.goto(URL_APP)
+            page.goto(URL_AREA)
+            page.goto(URL_AREA)
 
             print("选择日期", end="--")
             print(DATE)
-            page.goto(URL_APP)
+            page.goto(URL_AREA)
 
             print("列表模式", end="--")
-            selector = "div.reg-pavilion:has-text('列表模式')"
-            page.wait_for_selector(selector, state="visible", timeout=10000)
-            page.click(selector)
-            page.click(selector)
+            locator = page.locator("div.reg-pavilion:visible:has-text('列表模式')")
+            locator.click(timeout=10000)
 
             print("选择座位", end="--")
             selected_seat = None
@@ -136,13 +136,13 @@ def reserve():
             page.click(selector)
 
             page.wait_for_selector(".block_header:has-text('预约成功')", timeout=15000)
-            print("预约成功！")
+            print("--- 预约成功 ---")
 
             message = f":seat | {selected_seat}"
             req = urllib.request.Request(WEBHOOK, data=json.dumps({"msgtype":"text","text":{"content": message}}).encode(), headers={"Content-Type":"application/json"})
             urllib.request.urlopen(req).read()
         except Exception as e:
-            print("未检测到预约成功标识，可能预约失败")
+            print("\n<<< 预约失败 >>>")
             debug_snapshot(page, "reservation_failed")
             message = f":seat | failed"
             req = urllib.request.Request(WEBHOOK, data=json.dumps({"msgtype":"text","text":{"content": message}}).encode(), headers={"Content-Type":"application/json"})
