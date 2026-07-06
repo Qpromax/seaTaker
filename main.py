@@ -3,11 +3,10 @@ import urllib.request, json
 from playwright.sync_api import sync_playwright
 from datetime import datetime, timedelta
     
-# True=无头模式（后台运行），False=显示浏览器窗口
 HEADLESS  = True
 SLOW_MO   = 100
 
-# 获取明天日期，格式 YYYY-MM-DD
+# 获取日期，格式 YYYY-MM-DD
 DATE = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
 with open('data.json', 'r', encoding='utf-8') as f:
     data = json.load(f) 
@@ -51,7 +50,7 @@ def reserve():
         )
         page = context.new_page()
 
-        # ---------- 注入反检测脚本（手动增强）----------
+        # 注入反检测脚本
         page.add_init_script("""
             // 覆盖 webdriver
             Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
@@ -99,15 +98,12 @@ def reserve():
                 print("未检测到登录表单")
         
             print("开始预约", end="--")
-            selector = "div.item.btn:has-text('座位预约')"
-            page.wait_for_selector(selector, state="visible", timeout=10000)
-            page.click(selector)
+            page.locator("div.item.btn:has-text('座位预约')").click(timeout=10000)
 
             print("选择教室", end="--")
             print(ROOM)
-            selector = "button.van-button--primary:has-text('预约')"
             page.wait_for_selector("button.van-button--primary:has-text('预约')", timeout=10000)
-            page.goto(URL_AREA)
+            page.goto(URL_DATE)
             page.goto(URL_AREA)
 
             print("选择日期", end="--")
@@ -131,12 +127,10 @@ def reserve():
                 raise Exception("所有备用座位均不可用")
             
             print("提交预约", end="--")
-            selector = "button.van-button--primary.confirm.btn"
-            page.wait_for_selector(selector, state="visible", timeout=10000)
-            page.click(selector)
+            page.locator("button.van-button--primary.confirm.btn").click(timeout=10000)
 
             page.wait_for_selector(".block_header:has-text('预约成功')", timeout=15000)
-            print("--- 预约成功 ---")
+            print("=== 预约成功 ===")
 
             message = f":seat | {selected_seat}"
             req = urllib.request.Request(WEBHOOK, data=json.dumps({"msgtype":"text","text":{"content": message}}).encode(), headers={"Content-Type":"application/json"})
